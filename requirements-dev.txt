@@ -1,0 +1,14 @@
+black
+isort
+pyright
+toml
+pytest
+pytest-cov
+pylint
+matplotlib
+pydantic
+typer
+tqdm
+requests
+pymongo
+ftfy

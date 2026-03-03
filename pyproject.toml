@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"] # Will change after deciding on backend stuff
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "newsletter"
+version = "0.1a1" # Version numbering follows alpha/beta/release cand convention such as:
+# https://en.wikipedia.org/wiki/Software_versioning
+description = "Geological newsletter agent"
+readme = {file = "README.md", content-type = "text/markdown"}
+requires-python=">=3.10"
+dynamic = ["dependencies", "optional-dependencies"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["newsletter*"]
+namespaces = true
+
+[tool.setuptools.dynamic]
+dependencies = {file = "requirements.txt"}
+
+[tool.setuptools.dynamic.optional-dependencies]
+dev = {file = ["requirements-dev.txt"]}
+
+[tool.pytest.ini_options]
+addopts = "-ra -q -vv --cov=newsletter"
+testpaths = ["src/tests"]
+
+[tool.pylint.MASTER]
+disable = [] # Can disable specific pylint messages such as:
+# https://pylint.readthedocs.io/en/latest/user_guide/messages/convention/missing-module-docstring.html
+
+[tool.black]
+line-length = 88
+
+[tool.isort]
+profile = "black"
+
+[tool.pyright]
+include = ["src"]
+stubPath = ""

@@ -1,0 +1,21 @@
+from enum import Enum
+
+class GeologyMajor(str, Enum):
+    GENERAL_GEOLOGY = "General Geology"
+    GEOPHYSICS = "Geophysics"
+    GEOCHEMISTRY = "Geochemistry"
+    PALEONTOLOGY = "Paleontology"
+    MINERALOGY_PETROLOGY = "Mineralogy/Petrology"
+    SEDIMENTOLOGY = "Sedimentology"
+    STRUCTURAL_GEOLOGY = "Structural Geology"
+    HYDROGEOLOGY = "Hydrogeology"
+    ENVIRONMENTAL_GEO = "Environmental Geo"
+    ENGINEERING_GEO = "Engineering Geo"
+    MARINE_GEOLOGY = "Marine Geology"
+    PLANETARY_GEOLOGY = "Planetary Geology"
+    PETROLEUM_GEOLOGY = "Petroleum Geology"
+    ECONOMIC_GEOLOGY = "Economic Geology"
+    GEOMORPHOLOGY = "Geomorphology"
+    VOLCANOLOGY = "Volcanology"
+    GEOCHRONOLOGY = "Geochronology"
+    CLIMATE_CHANGE = "Climate Change"
