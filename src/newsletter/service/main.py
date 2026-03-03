@@ -2,6 +2,9 @@ import json
 import uuid
 from typing import Dict, Any
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, HTTPException, Query
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
