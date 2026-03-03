@@ -1,12 +1,5 @@
-# src/newsletter/agent/agent.py
-
-from google.adk.agents import LlmAgent
-from google.adk.models.lite_llm import LiteLlm
-
-# Import our schema and schema-prompt generator
+from google.adk.agents import LlmAgent, SequentialAgent
 from newsletter.schemas.output_models import NewsletterOutput, _get_json_schema_prompt
-
-# Import our safely constrained tools
 from newsletter.tools.agent_tools import (
     search_peer_reviewed_papers,
     search_general_geoscience_headlines,
@@ -19,35 +12,14 @@ from newsletter.logger_settings import get_logger
 
 logger = get_logger(__name__)
 
-# 1. Generate the strict schema instructions dynamically
+# 1. Generate Schema Instructions
 try:
     schema_instructions = _get_json_schema_prompt(NewsletterOutput)
 except Exception as e:
     logger.error(f"Failed to load schema instructions: {e}")
     schema_instructions = "Output must be valid JSON."
 
-# 2. Define the Agent's brain (System Prompt)
-INSTRUCTION = f"""
-You are an expert Geoscience Intelligence Agent and Newsletter Editor. 
-Your objective is to generate highly informative, professional newsletters for specific geological majors, subfields, or topics requested by the user.
-
-You are strongly encouraged to use emojis and casual writing for the sake of human readability.
-
-WORKFLOW:
-1. ANALYZE: Understand the user's requested topic.
-2. GATHER: Strategically use your tools to fetch information. Avoid 'spamming' a tool as that will result in an error.
-3. SYNTHESIZE: Group the gathered articles by their source. Write engaging titles, concise summaries, and detailed analytical notes explicitly using core scientific concepts.
-
-CONSTRAINTS:
-- You MUST output valid JSON only. Do not wrap the JSON in markdown code blocks (no ```json ... ```).
-- Your output must EXACTLY follow this JSON schema structure and adhere strictly to the field descriptions provided:
-
-{schema_instructions}
-
-Do not add extra keys. Ensure all URLs from the tools are accurately restated in the "source" field.
-"""
-
-# 3. Assemble the available tools
+# 2. Assemble Tools
 agent_tools = [
     search_peer_reviewed_papers,
     search_general_geoscience_headlines,
@@ -57,22 +29,56 @@ agent_tools = [
     search_general_knowledge
 ]
 
-# 4. Instantiate the ADK Agent and assign it to 'root_agent'
+# 3. Agent 1: The Researcher (Thinking & Tool Use)
+researcher_agent = LlmAgent(
+    name="GeoscienceResearcher",
+    model="gemini-3-flash-preview",
+    tools=agent_tools,
+    instruction="""
+    You are an expert Geoscience Intelligence Agent. 
+    Your objective is to thoroughly research the user's requested topic using your tools.
+    1. ANALYZE the topic from professional perspective and consider important related topics.
+    2. GATHER articles using your tools. Never spam the tools but be thorough.
+        Note that there are tools for you to enrich your understanding (general web search etc.)
+    3. SYNTHESIZE your findings into a highly detailed, accurate, unstructured text report.
+    Ensure you explicitly include user query, all original article titles, exact URLs, and your analytical notes.
+    """,
+    description="Researches geoscience topics and writes a comprehensive text report.",
+    output_key="research_report"
+)
+
+# 4. Agent 2: The Structurer (Formatting & Validation)
+structurer_agent = LlmAgent(
+    name="NewsletterStructurer",
+    model="gemini-3-pro-preview",
+    instruction=f"""
+    You are a strict Newsletter Editor.
+    Your objective is to generate highly informative, professional newsletters for specific geological majors, subfields, or topics requested by the user.
+    You are strongly encouraged to use emojis and casual writing in freeform fields for the sake of human readability.
+  
+    
+    CONSTRAINTS:
+    - Output ONLY valid JSON. Do not wrap in markdown code blocks (no ```json).
+    - Hallucinated keys are strictly forbidden. Do not add fields outside the schema.
+    - Adhere EXACTLY to this schema. Both in terms of structure and content specifications:
+    {schema_instructions}
+    
+    RESEARCH REPORT TO FORMAT:
+    {{research_report}}
+    """,
+    description="Formats the unstructured research report into strict JSON.",
+    output_schema=NewsletterOutput,
+    output_key="structured_json"
+)
+
+# 5. Assemble the Sequential Pipeline
 try:
-    root_agent = LlmAgent(
-        name="geology_newsletter_agent",
-        description="An autonomous agent that synthesizes geoscience data into structured newsletters.",
-        model=LiteLlm(model="gemini/gemini-3-flash-preview"), 
-        tools=agent_tools,
-        instruction=INSTRUCTION,
+    root_agent = SequentialAgent(
+        name="geology_newsletter_pipeline",
+        sub_agents=[researcher_agent, structurer_agent],
+        description="A pipeline that researches geoscience news and formats it into strict JSON."
     )
-    logger.info("Geology Newsletter Agent initialized successfully.")
+    logger.info("Sequential Pipeline initialized successfully.")
 except Exception as e:
-    logger.error(f"Failed to initialize root_agent: {e}")
-    # Fallback minimal agent so the server doesn't crash on boot, but fails gracefully on use
-    root_agent = LlmAgent(
-        name="fallback_agent",
-        description="Fallback agent due to initialization failure.",
-        model=LiteLlm(model="gemini/gemini-3-flash-preview"),
-        instruction="Tell the user there was a critical error initializing the main agent.",
-    )
+    logger.error(f"Failed to initialize pipeline: {e}")
+    root_agent = LlmAgent(name="fallback", model=GEMINI_MODEL, instruction="Error state.")
