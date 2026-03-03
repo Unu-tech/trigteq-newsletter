@@ -15,7 +15,7 @@ HEADERS = {
     'Accept': 'application/json, application/rss+xml, text/xml'
 }
 
-def fetch_rss_feed(feed_url: str, max_results: int = 3) -> List[Dict[str, str]]:
+def fetch_rss_feed(feed_url: str, max_results: int = 10) -> List[Dict[str, str]]:
     """Generic parser for RSS/Atom feeds with intelligent abstract hunting."""
     try:
         response = requests.get(feed_url, headers=HEADERS, timeout=10)
