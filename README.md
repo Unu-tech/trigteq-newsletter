@@ -51,4 +51,16 @@ The below command installs requirements-dev and what's under the src directory a
 
 ```bash
 make install   # install dev dependencies
+```
 
+### Step 3: Start server
+
+Note that env variables should be present. Then, run:
+
+```bash
+docker compose up -d
+# When stopping
+# docker compose down
+# Can also restart
+# docker compose restart
+```
